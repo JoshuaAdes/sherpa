@@ -3,7 +3,7 @@
   "version": "0.3.0",
   "description": "Delegates low-logic tasks to Gemini/Codex CLIs. Claude stays master orchestrator. Saves input tokens via delegation, brainstorming, and context handoff. Writes rolling session log for rate-limit recovery.",
   "author": "Joshua Ades",
-  "license": "CC BY-NC 4.0",
+  "license": "MIT + Commons Clause",
   "skills": [
     "skills/sherpa-delegation"
   ],

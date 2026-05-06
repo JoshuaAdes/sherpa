@@ -56,6 +56,6 @@ Sherpa intercepts those tasks before Claude touches them, routes them to free or
 
 ## License
 
-Creative Commons Attribution-NonCommercial 4.0 (CC BY-NC 4.0)
-Free to use and modify. Commercial use not permitted.
+MIT + Commons Clause
+Free to use, modify, and deploy internally. Selling this plugin or products built primarily on it is not permitted.
 See [LICENSE](LICENSE).
