@@ -47,7 +47,7 @@
 - Shorthand keys [G] [C] [OUT] [P] defined once, used throughout (~30% token reduction)
 
 ### New Modes
-- **Brainstorm**: Gemini generates alternatives, Codex generates code alternatives (if installed), Claude synthesizes
+- **Brainstorm**: Gemini generates alternatives · Codex optional per-run (user chooses G or GC) · Claude synthesizes
 - **Codex Write**: user-initiated, Codex gets write access with full context package, Claude reviews
 - **Handoff**: context pressure triggers Codex takeover with structured handoff prompt
 

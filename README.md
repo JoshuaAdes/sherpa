@@ -13,7 +13,7 @@ Claude Code plugin. Routes tasks to the right model: Gemini for research, search
 | Delegation | large file, log, codebase | Delegate reads/searches, Claude gets summary |
 | Web Search | search / look up / docs for | Gemini uses native Google Search — faster, no Claude WebFetch tokens |
 | Onboarding | "understand this project" | Quick or deep project map, no broad Claude reads |
-| Brainstorm | "brainstorm alternatives for X" | Gemini + Codex generate options, Claude synthesizes |
+| Brainstorm | "brainstorm alternatives for X" | Gemini always · Codex optional (user chooses) · Claude synthesizes |
 | Plan Review | before complex implementation | Delegate flags edge cases and failure points |
 | Codex Write | "use codex to write this" | Codex codes with context package, Claude reviews |
 | Rate Limit Recovery | Claude hits limit mid-task | Gemini/Codex resume from handoff file or session log |
@@ -47,13 +47,26 @@ Rolling session log in `.sherpa/`. Sherpa routes reads to Gemini by default — 
 
 ---
 
+## Commands
+
+Explicit slash commands — complement automatic delegation, don't replace it.
+
+| Command | What it does |
+|---|---|
+| `/sherpa:handoff` | Package session → `sherpa-handoff.md`, hand off to Codex |
+| `/sherpa:brainstorm [topic]` | Gemini always · Codex optional (G or GC prompt) · Claude synthesizes |
+| `/sherpa:search [query]` | Gemini web search via built-in Google Search |
+| `/sherpa:onboard` | Quick or deep project map via Gemini |
+
+---
+
 ## Philosophy
 
 Claude Code excels at coding decisions, architecture, and final writes. A lot of real engineering work isn't that: research, docs, web search, file reads, log scans, codebase exploration.
 
 Gemini's free tier and large context window handle token-expensive analysis without burning Claude tokens. Gemini brainstorming brings genuinely different intelligence — not a budget substitute. Gemini's built-in Google Search covers what Claude Code can't do natively. Codex takes over for write-heavy tasks and context handoffs.
 
-Sherpa intercepts each task, routes it to the right model, and pipes back a compressed result. Claude spends tokens only where its reasoning actually matters. And when context gets heavy — or a rate limit is approaching — Sherpa packages the full session into a handoff file so Codex or Gemini can drive to completion without losing a step.
+Sherpa intercepts each task, routes it to the right model, and pipes back a compressed result. Claude spends tokens only where its reasoning actually matters. When context gets heavy, you can trigger a handoff — Sherpa packages the session into a handoff file and Codex drives to completion. If a rate limit hits mid-task, the rolling session log means work resumes without losing a step.
 
 ---
 
