@@ -1,6 +1,6 @@
 {
   "name": "Sherpa",
-  "owner": "JoshuaAdes",
+  "owner": { "name": "JoshuaAdes" },
   "plugins": [
     {
       "name": "sherpa",
