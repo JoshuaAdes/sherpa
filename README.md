@@ -2,7 +2,7 @@
 
 > Carries the load so Claude can focus on the climb.
 
-Claude Code plugin. Delegates low-logic tasks to Gemini and Codex CLIs. Claude stays master — all final decisions stay with Claude. Writes: Claude by default, Codex when explicitly asked.
+Claude Code plugin. Routes tasks to the right model: Gemini for research, search, large-file analysis, and brainstorming — Codex for write mode and context handoff. Claude stays master orchestrator, focused on decisions, architecture, and final writes.
 
 ---
 
@@ -49,8 +49,11 @@ Rolling session log in `.sherpa/`. Sherpa routes reads to Gemini by default — 
 
 ## Philosophy
 
-Claude is expensive on high-volume, low-logic work — reading large files, scanning logs, searching the web, exploring codebases. That cost is avoidable.
-Sherpa intercepts those tasks before Claude touches them, routes them to free or cheap CLI models, and pipes back a compressed result. Claude spends tokens only where its reasoning actually matters.
+Claude Code excels at coding decisions, architecture, and final writes. A lot of real engineering work isn't that: research, docs, web search, file reads, log scans, codebase exploration.
+
+Gemini's free tier and large context window handle token-expensive analysis without burning Claude tokens. Gemini brainstorming brings genuinely different intelligence — not a budget substitute. Gemini's built-in Google Search covers what Claude Code can't do natively. Codex takes over for write-heavy tasks and context handoffs.
+
+Sherpa intercepts each task, routes it to the right model, and pipes back a compressed result. Claude spends tokens only where its reasoning actually matters. And when context gets heavy — or a rate limit is approaching — Sherpa packages the full session into a handoff file so Codex or Gemini can drive to completion without losing a step.
 
 ---
 
