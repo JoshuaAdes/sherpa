@@ -1,0 +1,10 @@
+{
+  "name": "Sherpa",
+  "owner": "JoshuaAdes",
+  "plugins": [
+    {
+      "name": "sherpa",
+      "source": "."
+    }
+  ]
+}

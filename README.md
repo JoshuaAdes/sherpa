@@ -23,15 +23,20 @@ Claude Code plugin. Routes tasks to the right model: Gemini for research, search
 
 ## Install
 
+**1. Install CLI dependencies**
 ```bash
 # Required
 npm install -g @google/gemini-cli
 
 # Optional (enables write mode and context handoff)
 npm install -g @openai/codex
+```
 
-# Install plugin
-/plugin install JoshuaAdes/sherpa
+**2. Install plugin**
+
+```bash
+/plugin marketplace add JoshuaAdes/sherpa
+/plugin install sherpa@sherpa
 ```
 
 ---
