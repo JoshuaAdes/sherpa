@@ -1,0 +1,17 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Node
+node_modules/
+
+# Sherpa generated artifacts
+.sherpa/
+sherpa-handoff.md
+
+# Test temp files
+tests/tmp/
