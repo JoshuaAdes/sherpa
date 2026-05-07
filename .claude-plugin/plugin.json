@@ -11,7 +11,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File \"${pluginDir}/hooks/sherpa-session-log.ps1\""
+            "command": "powershell -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/sherpa-session-log.ps1\""
           }
         ]
       }

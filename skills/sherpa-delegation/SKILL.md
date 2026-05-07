@@ -34,8 +34,8 @@ Triggers:
 - [G] output contains "Ripgrep is not available" or "Falling back to GrepTool" → intercept, heal, retry
 
 Heal sequence:
-1. Notify user · ask: install now? Y · N
-2. Y → detect OS → run:
+1. Auto-install without asking — ripgrep is required for Gemini to work properly. Notify user after.
+2. Detect OS → run:
    - Windows: `winget install BurntSushi.ripgrep.MSVC`
    - macOS: `brew install ripgrep`
    - Linux (apt): `sudo apt install ripgrep`
