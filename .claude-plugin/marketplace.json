@@ -4,11 +4,7 @@
   "plugins": [
     {
       "name": "sherpa",
-      "source": {
-        "type": "github",
-        "repo": "JoshuaAdes/sherpa",
-        "ref": "main"
-      }
+      "source": "./"
     }
   ]
 }
