@@ -1,6 +1,9 @@
 ---
 name: search
-description: Delegate web search to Gemini using built-in Google Search. Faster and cheaper than Claude WebFetch.
+description: >
+  Web search via Gemini native Google Search. Trigger: look up, find docs, google this, latest version, check online, current info, search web, research topic, external info.
+  TRIGGER when: answer needs external or current source not in local files.
+  SKIP: info exists in local repo.
 ---
 
 Args: query from user input.

@@ -60,7 +60,7 @@ Ask [P] before delegating unless autopilot set or user explicitly requests.
 | context heavy / hand off / save tokens | → Handoff |
 
 ## Onboarding
-Trigger: understand / summarize / onboard / unfamiliar project
+Trigger: understand / summarize / onboard / unfamiliar project / learn project / map codebase / codebase overview / orient me / project tour
 
 > Sherpa: onboard? Q quick · D deep · C Claude · N skip
 
@@ -71,11 +71,13 @@ D fails → Claude reads flagged files directly.
 After onboarding: Claude reads only files it actively edits. Sherpa owns all exploration.
 
 ## Brainstorm
-Trigger: brainstorm / ideas for / options for / alternatives / think through
+Trigger: brainstorm / ideas for / options for / alternatives / think through / compare approaches / help me decide / pros and cons
 
-1. `[G] "7 alternatives for [topic]. Each: name · tradeoff · 1 sentence. [OUT]"`
-2. Code topic + [C] installed: `[C] exec "Code alternatives for [topic]. Each: approach · tradeoff · 3-line sketch. [OUT]"`
-3. Claude synthesizes all output, applies constraints, decides. Final call: Claude only.
+> Sherpa: brainstorm with G Gemini only · GC Gemini + Codex · N skip
+
+G: `[G] "7 alternatives for [topic]. Each: name · tradeoff · 1 sentence. [OUT]"` → Claude synthesizes.
+GC: run G → `[C] exec "Alternatives for [topic]. Each: approach · tradeoff · 3-line sketch. [OUT]"` → Claude synthesizes all.
+Final call: Claude only.
 
 ## Plan Review
 1. Claude drafts plan

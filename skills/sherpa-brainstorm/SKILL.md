@@ -1,6 +1,9 @@
 ---
 name: brainstorm
-description: Run multi-agent brainstorm on a topic. Gemini generates options, Claude synthesizes. Optionally include Codex for code alternatives.
+description: >
+  Multi-agent brainstorm via Gemini + optional Codex. Claude synthesizes. Trigger: think through, explore options, compare approaches, suggest alternatives, help me decide, pros and cons, generate ideas, design options.
+  TRIGGER when: user wants multiple solution paths or asks for options/alternatives.
+  SKIP: user gives direct implementation command.
 ---
 
 Args: topic from user input.

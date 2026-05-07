@@ -1,6 +1,9 @@
 ---
 name: onboard
-description: Run quick or deep project onboarding via Gemini. Maps structure, entry points, tech stack, conventions.
+description: >
+  Map project structure via Gemini. Trigger: map project, learn project, understand repo, codebase overview, orient me, repo summary, explore codebase, project tour.
+  TRIGGER when: user unfamiliar with repo or asks to learn/map/understand it.
+  SKIP: user already knows target files.
 ---
 
 > Sherpa: onboard? Q quick · D deep · C Claude · N skip
