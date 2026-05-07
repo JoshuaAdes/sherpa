@@ -11,6 +11,8 @@ Claude = orchestrator. Decisions, architecture: Claude only.
 Security · auth · complex refactors → Claude always, no exceptions.
 Writes: Claude by default — Codex only when user explicitly asks (Codex Write / Handoff).
 Delegates read, summarize, search, generate options by default — write only on explicit request.
+No-delegate: silent file reads where Claude reads full content just to pass it — same tokens, no savings.
+Delegate OK: user explicitly asks brainstorm/reasoning on file content → pass summary/excerpt only, not full content.
 
 ## Trust & Failure
 [G] trust error → set env GEMINI_CLI_TRUST_WORKSPACE=true · retry

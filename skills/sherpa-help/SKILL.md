@@ -2,7 +2,7 @@
 name: sherpa-help
 description: >
   Quick-reference card for all Sherpa skills and commands.
-  One-shot display, not a persistent mode. Trigger: /sherpa:help,
+  One-shot display, not a persistent mode. Trigger: /sherpa-help,
   "sherpa help", "what sherpa commands", "how do I use sherpa".
 ---
 
