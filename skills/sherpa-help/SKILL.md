@@ -29,7 +29,7 @@ When Sherpa spots a delegatable task, it asks:
 | **sherpa-search** | `/sherpa:search [query]` | Gemini web search via native Google Search |
 | **sherpa-onboard** | `/sherpa:onboard` | Quick or deep project map via Gemini |
 | **sherpa-handoff** | `/sherpa:handoff` | Package session context → `sherpa-handoff.md` → Codex drives |
-| **sherpa-help** | `/sherpa:help` | This card |
+| **sherpa-help** | `/sherpa-help` | This card |
 
 ## What Gets Delegated
 
