@@ -99,15 +99,16 @@ Trigger: context pressure · "hand off" · "continue with codex" · "save tokens
 > Sherpa: context heavy — hand off to [C]? Y · C keep going · N stop
 
 If Y:
-1. Write `sherpa-handoff.md` (caveman capsule):
+1. Write `sherpa-handoff.md` (machine-compressed):
    ```
-   task: [goal]
-   decided: [key decisions]
-   done: [completed steps]
-   next: [next step]
-   constraints: [rules/patterns]
-   files: [key paths]
+   TASK: [goal]
+   DECIDED: [decision]·[decision]
+   DONE: [step]·[step]
+   NEXT: 1.[step] 2.[step]
+   CONSTRAINTS: [rule]·[rule]
+   FILES: [path]✓ [path]✗
    ```
+   Rules: ALL CAPS · `·` between items · `→` flow · `✓`/`✗` done/pending · no prose.
 2. `[C] "read sherpa-handoff.md, continue task"`
 Claude steps back. [C] drives. Return: "back to Claude".
 
