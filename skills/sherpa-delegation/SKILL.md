@@ -23,9 +23,9 @@ Any other failure → stop, do not fall back silently → C Claude handles · S 
 
 ---
 
-[G]   = `gemini -y -p "..."`  (required)
-[C]   = `codex exec "..."` read · `codex "..."` write  (optional — skip if absent)
-[OUT] = "AI consumption only. No preamble. Caveman style: extreme brevity, symbols for relationships, 0 filler. [OUT]"
+[G]   = `gemini -y -p "[prompt]. AI consumption only. No preamble. Caveman: extreme brevity, symbols, 0 filler."` — append to EVERY [G] call, no exceptions
+[C]   = `codex exec "[prompt]. AI consumption only. No preamble. Extreme brevity."` read · `codex "[prompt]"` write  (optional — skip if absent)
+[OUT] = mandatory suffix for [G] · [C] read calls = "AI consumption only. No preamble. Caveman: extreme brevity, symbols, 0 filler."
 [P]   = Y once · A always (autopilot) · C Claude · N skip
 
 ## Health & Environment
