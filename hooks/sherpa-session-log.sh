@@ -1,17 +1,27 @@
 #!/bin/bash
-data=$(cat)
-tool=$(echo "$data" | jq -r '.tool_name // ""')
+python3 -c '
+import datetime
+import json
+import os
+import sys
 
-case "$tool" in Edit|Write|Bash) ;; *) exit 0 ;; esac
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
 
-detail=$(echo "$data" | jq -r '
-  if .tool_name == "Edit" or .tool_name == "Write" then
-    .tool_input.file_path // ""
-  elif .tool_name == "Bash" then
-    (.tool_input.command // "")[0:80] | gsub("\n"; " ")
-  else ""
-  end
-')
+tool = data.get("tool_name")
+if tool not in {"Edit", "Write", "Bash"}:
+    sys.exit(0)
 
-mkdir -p ".sherpa"
-echo "$(date -u +%Y-%m-%dT%H:%M:%S) $tool $detail" >> ".sherpa/session.log"
+tool_input = data.get("tool_input") or {}
+if tool in {"Edit", "Write"}:
+    detail = tool_input.get("file_path") or ""
+else:
+    detail = (tool_input.get("command") or "").replace("\r\n", " ").replace("\n", " ").replace("\r", " ")[:80]
+
+os.makedirs(".sherpa", exist_ok=True)
+timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+with open(os.path.join(".sherpa", "session.log"), "a", encoding="utf-8") as log:
+    log.write(f"{timestamp} {tool} {detail}\n")
+'
