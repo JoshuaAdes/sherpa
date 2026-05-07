@@ -27,6 +27,10 @@ if (!available('gemini')) {
   missing.push('gemini CLI: required for Sherpa delegation. Install: npm install -g @google/gemini-cli');
 }
 
+if (available('gemini') && !process.env.GEMINI_CLI_TRUST_WORKSPACE) {
+  missing.push('GEMINI_CLI_TRUST_WORKSPACE not set. Add to Claude Code settings.json: "env": { "GEMINI_CLI_TRUST_WORKSPACE": "true" }');
+}
+
 if (missing.length === 0) {
   fs.writeFileSync(flagFile, '');
   process.exit(0);
