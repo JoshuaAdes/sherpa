@@ -36,7 +36,15 @@ npm install -g @openai/codex
 
 ```bash
 /plugin marketplace add JoshuaAdes/sherpa
-/plugin install sherpa@sherpa
+/plugin install sherpa@Sherpa
+```
+
+**To reinstall after updates**
+
+```bash
+/plugin marketplace remove Sherpa
+/plugin marketplace add JoshuaAdes/sherpa
+/plugin install sherpa@Sherpa
 ```
 
 ---
