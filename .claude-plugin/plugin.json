@@ -1,10 +1,20 @@
 {
   "name": "sherpa",
-  "version": "0.4.0",
-  "description": "Delegates low-logic tasks to Gemini/Codex CLIs. Claude stays master orchestrator. Saves input tokens via delegation, brainstorming, and context handoff. Writes rolling session log for rate-limit recovery.",
+  "version": "0.5.1",
+  "description": "Delegates low-logic tasks to Gemini/Codex CLIs. Claude stays master orchestrator. Saves input tokens via delegation, brainstorming, and context handoff. Writes rolling session log for rate-limit recovery. Prompt optimizer with browser editor.",
   "author": { "name": "Joshua Ades" },
   "license": "MIT + Commons Clause",
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/sherpa-optimizer.js\""
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [
@@ -21,7 +31,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/sherpa-session-log.ps1\""
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/sherpa-logger.js\""
           }
         ]
       }
