@@ -16,7 +16,8 @@ Delegate OK: user explicitly asks brainstorm/reasoning on file content → pass 
 
 ## Trust & Failure
 [G] trust error → set env GEMINI_CLI_TRUST_WORKSPACE=true · retry
-[G] HTTP 429 → quota exhausted, retries automatically
+[G] stderr contains `QUOTA_EXHAUSTED` or `TerminalQuotaError` → RPD daily limit hit (Gemini CLI bug: no auto-fallback in headless -p mode) → retry same call adding `--model gemini-2.5-flash` → if still fails, retry with `--model gemini-2.5-flash-lite` → if all 3 exhausted, fail with message
+[G] stderr contains `RetryableQuotaError` or short 429 → RPM spike → retry automatically (Gemini CLI handles)
 [C] absent → skip silently, use [G]
 [C] trust error → add `[projects."/path"] trust_level = "trusted"` to ~/.codex/config.toml · retry
 Any other failure → stop, do not fall back silently → C Claude handles · S switch CLI · N skip

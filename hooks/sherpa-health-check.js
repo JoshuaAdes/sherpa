@@ -4,14 +4,53 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-// Skip check if already passed on this machine — avoids re-running on every session
 const flagFile = path.join(os.homedir(), '.sherpa-health-ok');
-if (fs.existsSync(flagFile)) process.exit(0);
 
 function available(cmd) {
   try { execSync(cmd + ' --version', { stdio: 'ignore' }); return true; }
   catch { return false; }
 }
+
+// Always verify vendor rg copy — survives gemini-cli updates that wipe bundle/vendor/ripgrep/
+// Runs even when flag file exists so CLI updates don't silently break file search
+function ensureVendorRg() {
+  if (!available('rg')) return false;
+  try {
+    const { execFileSync } = require('child_process');
+    const rgSrc = process.platform === 'win32'
+      ? execFileSync('where', ['rg'], { encoding: 'utf8' }).split('\n')[0].trim()
+      : execFileSync('which', ['rg'], { encoding: 'utf8' }).trim();
+
+    const geminiMain = process.platform === 'win32'
+      ? execFileSync('where', ['gemini'], { encoding: 'utf8' }).split('\n')[0].trim()
+      : execFileSync('which', ['gemini'], { encoding: 'utf8' }).trim();
+    // Windows: bin=npm\gemini → package=npm\node_modules\...
+    // macOS/Linux: bin=.../bin/gemini → package=.../lib/node_modules\... or ../node_modules/...
+    const binDir = path.dirname(geminiMain);
+    const candidates = [
+      path.resolve(binDir, 'node_modules', '@google', 'gemini-cli'),
+      path.resolve(binDir, '..', 'lib', 'node_modules', '@google', 'gemini-cli'),
+      path.resolve(binDir, '..', 'node_modules', '@google', 'gemini-cli'),
+    ];
+    const geminiRoot = candidates.find(p => fs.existsSync(path.join(p, 'package.json')));
+    if (!geminiRoot) return false;
+    const arch = process.arch === 'x64' ? 'x64' : process.arch;
+    const binName = `rg-${process.platform}-${arch}${process.platform === 'win32' ? '.exe' : ''}`;
+    const vendorDir = path.join(geminiRoot, 'bundle', 'vendor', 'ripgrep');
+    const rgDest = path.join(vendorDir, binName);
+
+    if (!fs.existsSync(rgDest)) {
+      fs.mkdirSync(vendorDir, { recursive: true });
+      fs.copyFileSync(rgSrc, rgDest);
+    }
+    return true;
+  } catch (_) { return false; }
+}
+
+ensureVendorRg();
+
+// Skip remaining checks if already passed — avoids re-running on every session
+if (fs.existsSync(flagFile)) process.exit(0);
 
 const missing = [];
 
@@ -22,30 +61,6 @@ if (!available('rg')) {
     ? 'brew install ripgrep'
     : 'sudo apt install ripgrep';
   missing.push('ripgrep (rg): required for Gemini file search. Install: ' + install);
-} else {
-  // Gemini CLI ignores system PATH — looks for rg-{platform}-{arch}[.exe] in its own
-  // bundle/vendor/ripgrep/ dir. Must copy there or Gemini falls back to slower GrepTool.
-  try {
-    const { execFileSync } = require('child_process');
-    const rgSrc = process.platform === 'win32'
-      ? execFileSync('where', ['rg'], { encoding: 'utf8' }).split('\n')[0].trim()
-      : execFileSync('which', ['rg'], { encoding: 'utf8' }).trim();
-
-    // Resolve Gemini CLI install root via its own binary location
-    const geminiMain = process.platform === 'win32'
-      ? execFileSync('where', ['gemini'], { encoding: 'utf8' }).split('\n')[0].trim()
-      : execFileSync('which', ['gemini'], { encoding: 'utf8' }).trim();
-    const geminiRoot = path.resolve(path.dirname(geminiMain), '..', 'node_modules', '@google', 'gemini-cli');
-    const arch = process.arch === 'x64' ? 'x64' : process.arch;
-    const binName = `rg-${process.platform}-${arch}${process.platform === 'win32' ? '.exe' : ''}`;
-    const vendorDir = path.join(geminiRoot, 'bundle', 'vendor', 'ripgrep');
-    const rgDest = path.join(vendorDir, binName);
-
-    if (!fs.existsSync(rgDest)) {
-      fs.mkdirSync(vendorDir, { recursive: true });
-      fs.copyFileSync(rgSrc, rgDest);
-    }
-  } catch (_) { /* non-fatal — Gemini falls back to GrepTool */ }
 }
 
 if (!available('gemini')) {
