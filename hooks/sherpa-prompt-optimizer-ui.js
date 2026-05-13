@@ -26,6 +26,7 @@ async function readStdin() {
 
 function openBrowser(url) {
   toStderr('Sherpa optimizer: ' + url);
+  if (process.env.SHERPA_NO_BROWSER) return;
   if (process.platform === 'linux' && !process.env.DISPLAY) {
     toStderr('No DISPLAY — open manually: ' + url);
     return;
