@@ -2,9 +2,6 @@
 const http = require('http');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
-const os = require('os');
-const path = require('path');
-const fs = require('fs');
 
 // ── args ──────────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
@@ -46,9 +43,11 @@ function openBrowser(url) {
 }
 
 // ── backends ──────────────────────────────────────────────────────────────────
-const MODEL_CHAIN = ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+const MODEL_CHAIN = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro'];
+const MODEL_KEY_MAP = { lite: 0, flash: 1, pro: 2 };
 
-// async spawn — does not block the HTTP server / SSE while Gemini runs
+let activeChild = null;
+
 function runGeminiAsync(prompt, modelIndex = 0) {
   return new Promise((resolve) => {
     const model = MODEL_CHAIN[modelIndex];
@@ -62,25 +61,40 @@ function runGeminiAsync(prompt, modelIndex = 0) {
       shell: true,
       env: { ...process.env, GEMINI_CLI_TRUST_WORKSPACE: 'true' }
     });
+    activeChild = child;
 
     let stdout = '';
     let stderr = '';
-    child.stdout.on('data', d => { stdout += d; });
-    child.stderr.on('data', d => { stderr += d; });
+    let capacityKilled = false;
 
-    const timer = setTimeout(() => { child.kill(); }, 90000);
+    const isCapacityErr = s =>
+      s.includes('MODEL_CAPACITY_EXHAUSTED') || s.includes('No capacity available') ||
+      s.includes('QUOTA_EXHAUSTED') || s.includes('TerminalQuotaError') ||
+      s.includes('exhausted your capacity');
+
+    child.stdout.on('data', d => { stdout += d; });
+    child.stderr.on('data', d => {
+      stderr += d;
+      if (!capacityKilled && isCapacityErr(stderr)) {
+        capacityKilled = true;
+        try { child.kill(); } catch (_) {}
+      }
+    });
+
+    const timer = setTimeout(() => { child.kill(); }, 45000);
 
     child.on('close', async (code) => {
       clearTimeout(timer);
-      const isQuota = stderr.includes('QUOTA_EXHAUSTED') ||
-                      stderr.includes('TerminalQuotaError') ||
-                      stderr.includes('exhausted your capacity');
-      if (isQuota && modelIndex < MODEL_CHAIN.length - 1) {
-        toStderr(`Sherpa: ${model} quota exhausted — falling back to ${MODEL_CHAIN[modelIndex + 1]}`);
+      if (activeChild === child) activeChild = null;
+      if ((capacityKilled || isCapacityErr(stderr)) && modelIndex < MODEL_CHAIN.length - 1) {
+        toStderr(`Sherpa: ${model} capacity exhausted — falling back to ${MODEL_CHAIN[modelIndex + 1]}`);
         resolve(await runGeminiAsync(prompt, modelIndex + 1));
         return;
       }
-      if (code !== 0 || !stdout.trim()) { resolve(null); return; }
+      if (code !== 0 || !stdout.trim()) {
+        if (stderr.trim()) toStderr(`Sherpa: ${model} stderr: ${stderr.trim().slice(0, 300)}`);
+        resolve(null); return;
+      }
       resolve(stdout.trim());
     });
   });
@@ -109,22 +123,20 @@ function optimize(prompt) {
 }
 
 // ── HTML ──────────────────────────────────────────────────────────────────────
-function buildHTML(nonce) {
+function buildHTML(nonce, origPrompt) {
+  const escaped = (origPrompt || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const json = JSON.stringify(origPrompt || '');
   return `<!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8">
 <title>⚡ Sherpa — Prompt Optimizer</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,sans-serif;max-width:820px;margin:32px auto;padding:0 24px;color:#1a1a1a}
-h2{font-size:20px;color:#b45309;margin-bottom:4px}
-.sub{color:#666;font-size:13px;margin-bottom:20px}
-#loading{text-align:center;padding:60px 0}
-.spinner{width:36px;height:36px;border:3px solid #e5e7eb;border-top-color:#f59e0b;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{color:#666;font-size:14px}
-#result{display:none}
+h2{font-size:20px;color:#b45309;margin-bottom:4px;text-align:center}
+.sub{color:#666;font-size:13px;margin-bottom:20px;text-align:center}
 .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
-.card{border:2px solid #e5e7eb;border-radius:8px;padding:14px;cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s}
+.card{border:2px solid #e5e7eb;border-radius:8px;padding:14px;cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s;min-height:140px}
 .card:hover{border-color:#d1d5db}
 .card.selected{border-color:#2563eb;box-shadow:0 0 0 3px #bfdbfe}
 .card.orig.selected{border-color:#6366f1;box-shadow:0 0 0 3px #c7d2fe}
@@ -133,78 +145,146 @@ h2{font-size:20px;color:#b45309;margin-bottom:4px}
 .card.orig.selected .card-label{color:#6366f1}
 .card-ta{width:100%;min-height:80px;font-size:13px;line-height:1.6;color:#374151;border:none;background:transparent;resize:none;outline:none;font-family:inherit;cursor:pointer;padding:0;pointer-events:none;white-space:pre-wrap;word-break:break-word;display:block}
 .card.active .card-ta{cursor:text;pointer-events:all;resize:vertical}
-.row{display:flex;gap:8px;align-items:center}
+.opt-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 0;gap:8px}
+.spinner{width:28px;height:28px;border:3px solid #e5e7eb;border-top-color:#f59e0b;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.opt-msg{color:#9ca3af;font-size:13px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 button{padding:8px 20px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;transition:background 0.1s}
-.btn-use{background:#2563eb;color:#fff}.btn-use:hover{background:#1d4ed8}
+.btn-orig{background:#6366f1;color:#fff}.btn-orig:hover{background:#4f46e5}
+.btn-opt{background:#2563eb;color:#fff}.btn-opt:hover{background:#1d4ed8}
+.btn-opt:disabled{background:#bfdbfe;color:#93c5fd;cursor:not-allowed}
+.btn-stop{background:#ef4444;color:#fff}.btn-stop:hover{background:#dc2626}
+.btn-stop:disabled{background:#fca5a5;cursor:not-allowed}
 .btn-reopt{background:#f59e0b;color:#fff}.btn-reopt:hover{background:#d97706}
 .btn-reopt:disabled{background:#fde68a;color:#92400e;cursor:not-allowed}
 .btn-cancel{background:#f3f4f6;color:#374151;margin-left:auto}.btn-cancel:hover{background:#e5e7eb}
 .status{font-size:12px;color:#6b7280}
 .warn{color:#b45309;background:#fef3c7;border:1px solid #fde68a;padding:8px 12px;border-radius:6px;margin-bottom:12px;font-size:13px}
+.model-row{display:flex;gap:6px;align-items:center;margin-bottom:10px}
+.model-label{font-size:12px;color:#6b7280;font-weight:600;margin-right:2px}
+.btn-model{padding:4px 12px;border:1px solid #d1d5db;border-radius:12px;cursor:pointer;font-size:11px;font-weight:600;background:#f9fafb;color:#374151;transition:all 0.1s}
+.btn-model.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
 </style>
 </head><body>
 <h2>⚡ Sherpa — Prompt Optimizer</h2>
-<div class="sub">Click a card to edit it · Re-optimize anytime</div>
+<div class="sub">Click a card to edit · Re-optimize anytime</div>
 
-<div id="loading">
-  <div class="spinner"></div>
-  <div class="loading-text">Optimizing with Gemini…</div>
+<div id="warn-box"></div>
+
+<div class="cards">
+  <div class="card orig selected active" id="card-orig" onclick="activateCard('orig')">
+    <div class="card-label">Original</div>
+    <textarea class="card-ta" id="text-orig" onclick="event.stopPropagation()">${escaped}</textarea>
+  </div>
+  <div class="card" id="card-opt" onclick="activateCard('opt')">
+    <div class="card-label">✨ Optimized</div>
+    <div id="opt-inner" class="opt-inner">
+      <div class="spinner"></div>
+      <div class="opt-msg">Optimizing…</div>
+    </div>
+    <textarea class="card-ta" id="text-opt" onclick="event.stopPropagation()" style="display:none"></textarea>
+  </div>
 </div>
 
-<div id="result">
-  <div id="warn-box"></div>
-  <div class="cards">
-    <div class="card orig" id="card-orig" onclick="activateCard('orig')">
-      <div class="card-label">Original</div>
-      <textarea class="card-ta" id="text-orig" onclick="event.stopPropagation()"></textarea>
-    </div>
-    <div class="card" id="card-opt" onclick="activateCard('opt')">
-      <div class="card-label">✨ Optimized</div>
-      <textarea class="card-ta" id="text-opt" onclick="event.stopPropagation()"></textarea>
-    </div>
-  </div>
-  <div class="row">
-    <button class="btn-use" onclick="submitPrompt()">Use It</button>
-    <button class="btn-reopt" id="btn-reopt" onclick="reoptimize()">Re-optimize</button>
-    <span class="status" id="status-msg"></span>
-    <button class="btn-cancel" onclick="cancelPrompt()">Cancel</button>
-  </div>
+<div class="model-row">
+  <span class="model-label">Model:</span>
+  <button class="btn-model active" id="model-lite" onclick="setModel('lite')">Flash Lite</button>
+  <button class="btn-model" id="model-flash" onclick="setModel('flash')">Flash</button>
+  <button class="btn-model" id="model-pro" onclick="setModel('pro')">Pro</button>
+</div>
+
+<div class="row">
+  <button class="btn-orig" onclick="submitOrig()">Use Original</button>
+  <button class="btn-opt" id="btn-opt" onclick="submitOpt()" disabled>Use Optimized</button>
+  <button class="btn-stop" id="btn-stop" onclick="stopOpt()">Stop</button>
+  <button class="btn-reopt" id="btn-reopt" onclick="reoptimize()">Re-optimize</button>
+  <span class="status" id="status"></span>
+  <button class="btn-cancel" onclick="cancelPrompt()">Cancel</button>
 </div>
 
 <script>
 const nonce = '${nonce}';
-let sel = 'opt';
-let orig = '';
+const origText = ${json};
+let sel = 'orig';
+let optimizing = true;
+let phase = 'initial'; // 'initial' | 'reoptimizing'
+let selectedModel = 'lite';
+
+function setModel(m) {
+  selectedModel = m;
+  ['lite','flash','pro'].forEach(k => {
+    document.getElementById('model-' + k).classList.toggle('active', k === m);
+  });
+}
+
+function updateReoptLabel() {
+  const btn = document.getElementById('btn-reopt');
+  if (!btn.disabled) {
+    const label = sel === 'opt' && document.getElementById('text-opt').style.display !== 'none'
+      ? 'Re-optimize Optimized' : 'Re-optimize Original';
+    btn.textContent = label;
+  }
+}
 
 const es = new EventSource('/events?n=' + nonce);
 es.onmessage = e => {
   const d = JSON.parse(e.data);
-  if (d.type === 'ready') showResult(d.original, d.optimized, d.error);
+  if (phase === 'initial') {
+    if (d.type === 'ready') showResult(d.optimized, d.error);
+    if (d.type === 'stopped') showStopped();
+  }
   if (d.type === 'reoptimized') updateOpt(d.text, d.error);
 };
 
-function showResult(original, optimized, error) {
-  orig = original;
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('result').style.display = 'block';
-  document.getElementById('text-orig').value = orig;
-  document.getElementById('text-opt').value = optimized || orig;
+function showResult(optimized, error) {
+  optimizing = false;
+  document.getElementById('btn-stop').style.display = 'none';
+  document.getElementById('status').textContent = '';
+  setOptText(optimized || origText);
+  document.getElementById('btn-opt').disabled = false;
   if (error || !optimized) {
     document.getElementById('warn-box').innerHTML =
       '<div class="warn">Optimizer failed — showing original. Edit or re-optimize.</div>';
-    initActive('orig');
   } else {
     initActive('opt');
   }
 }
 
+function showStopped() {
+  optimizing = false;
+  document.getElementById('opt-inner').innerHTML =
+    '<div class="opt-msg" style="font-style:italic">Stopped — re-optimize or use original</div>';
+  document.getElementById('text-opt').value = origText;
+  document.getElementById('btn-opt').disabled = false;
+  document.getElementById('btn-stop').style.display = 'none';
+  document.getElementById('status').textContent = '';
+}
+
+function setOptText(text) {
+  document.getElementById('opt-inner').style.display = 'none';
+  const ta = document.getElementById('text-opt');
+  ta.style.display = 'block';
+  ta.value = text;
+}
+
 function updateOpt(text, error) {
-  const btn = document.getElementById('btn-reopt');
-  const status = document.getElementById('status-msg');
-  btn.disabled = false; btn.textContent = 'Re-optimize';
-  if (error || !text) { status.textContent = 'Re-optimize failed — try again'; return; }
-  document.getElementById('text-opt').value = text;
-  status.textContent = '';
+  optimizing = false;
+  document.getElementById('btn-stop').style.display = 'none';
+  const reoptBtn = document.getElementById('btn-reopt');
+  reoptBtn.disabled = false;
+  reoptBtn.textContent = 'Re-optimize';
+  document.getElementById('status').textContent = '';
+  if (error || !text) {
+    document.getElementById('opt-inner').innerHTML =
+      '<div class="opt-msg" style="font-style:italic">Re-optimize failed — try again</div>';
+    document.getElementById('opt-inner').style.display = 'flex';
+    document.getElementById('text-opt').style.display = 'none';
+    document.getElementById('btn-opt').disabled = true;
+    return;
+  }
+  setOptText(text);
+  document.getElementById('btn-opt').disabled = false;
   initActive('opt');
 }
 
@@ -216,10 +296,13 @@ function initActive(which) {
     card.classList.toggle('selected', on);
     card.classList.toggle('active', on);
   });
-  document.getElementById('text-' + which).focus();
+  const ta = document.getElementById('text-' + which);
+  if (ta && ta.style.display !== 'none') ta.focus();
+  updateReoptLabel();
 }
 
 function activateCard(which) {
+  if (which === 'opt' && document.getElementById('text-opt').style.display === 'none') return;
   if (sel !== which) {
     sel = which;
     ['orig', 'opt'].forEach(w => {
@@ -229,20 +312,41 @@ function activateCard(which) {
       card.classList.toggle('active', on);
     });
   }
-  document.getElementById('text-' + which).focus();
+  const ta = document.getElementById('text-' + which);
+  if (ta && ta.style.display !== 'none') ta.focus();
+  updateReoptLabel();
 }
 
-function getActiveText() {
-  return document.getElementById('text-' + sel).value.trim();
+async function stopOpt() {
+  document.getElementById('btn-stop').disabled = true;
+  await fetch('/stop?n=' + nonce, { method: 'POST' });
 }
 
-function reoptimize() {
-  const btn = document.getElementById('btn-reopt');
-  const status = document.getElementById('status-msg');
-  btn.disabled = true; btn.textContent = 'Optimizing…';
-  status.textContent = 'Running Gemini…';
-  fetch('/reoptimize?n=' + nonce, {
-    method: 'POST', body: getActiveText(), headers: {'content-type': 'text/plain'}
+async function reoptimize() {
+  if (optimizing) {
+    document.getElementById('btn-stop').disabled = true;
+    await fetch('/stop?n=' + nonce, { method: 'POST' });
+  }
+  phase = 'reoptimizing';
+  optimizing = true;
+  const inner = document.getElementById('opt-inner');
+  inner.style.display = 'flex';
+  inner.innerHTML = '<div class="spinner"></div><div class="opt-msg">Optimizing…</div>';
+  document.getElementById('text-opt').style.display = 'none';
+  document.getElementById('btn-opt').disabled = true;
+  document.getElementById('btn-stop').style.display = '';
+  document.getElementById('btn-stop').disabled = false;
+  const reoptBtn = document.getElementById('btn-reopt');
+  reoptBtn.disabled = true;
+  reoptBtn.textContent = 'Optimizing…';
+  document.getElementById('status').textContent = 'Running Gemini…';
+  const reoptBody = sel === 'opt' && document.getElementById('text-opt').style.display !== 'none'
+    ? document.getElementById('text-opt').value.trim()
+    : document.getElementById('text-orig').value.trim();
+  fetch('/reoptimize?n=' + nonce + '&model=' + selectedModel, {
+    method: 'POST',
+    body: reoptBody,
+    headers: {'content-type': 'text/plain'}
   });
 }
 
@@ -255,8 +359,14 @@ function go(endpoint, body) {
   }).catch(() => {});
 }
 
-function submitPrompt() { go('/submit', getActiveText()); }
-function cancelPrompt() { go('/cancel', orig); }
+function submitOrig() {
+  go('/submit', document.getElementById('text-orig').value.trim());
+}
+function submitOpt() {
+  const ta = document.getElementById('text-opt');
+  go('/submit', ta.style.display !== 'none' ? ta.value.trim() : document.getElementById('text-orig').value.trim());
+}
+function cancelPrompt() { go('/cancel', origText); }
 </script>
 </body></html>`;
 }
@@ -268,7 +378,8 @@ async function main() {
   const nonce = crypto.randomBytes(16).toString('hex');
   let done = false;
   let sseClient = null;
-  let pendingEvent = null; // buffer result if Gemini finishes before SSE connects
+  let pendingEvent = null;
+  let userStopped = false;
 
   function sendSSE(data) {
     pendingEvent = data;
@@ -295,11 +406,10 @@ async function main() {
 
     if (req.method === 'GET' && url.pathname === '/') {
       res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
-      res.end(buildHTML(nonce));
+      res.end(buildHTML(nonce, originalPrompt));
       return;
     }
 
-    // SSE endpoint — browser connects immediately, keeps connection open
     if (req.method === 'GET' && url.pathname === '/events') {
       if (!validNonce) { res.writeHead(403); res.end(); return; }
       res.writeHead(200, {
@@ -309,7 +419,6 @@ async function main() {
       });
       res.write(':\n\n');
       sseClient = res;
-      // If Gemini already finished before browser connected, flush now
       if (pendingEvent) {
         try { res.write('data: ' + JSON.stringify(pendingEvent) + '\n\n'); }
         catch (_) {}
@@ -320,13 +429,25 @@ async function main() {
 
     if (!validNonce) { res.writeHead(403); res.end('forbidden'); return; }
 
+    if (req.method === 'POST' && url.pathname === '/stop') {
+      userStopped = true;
+      if (activeChild) { try { activeChild.kill(); } catch (_) {} activeChild = null; }
+      res.writeHead(200); res.end('ok');
+      return;
+    }
+
     if (req.method === 'POST' && url.pathname === '/reoptimize') {
+      const modelKey = url.searchParams.get('model') || 'lite';
+      const modelIdx = MODEL_KEY_MAP[modelKey] ?? 0;
       let body = '';
       req.on('data', d => { if (body.length < 512 * 1024) body += d; });
       req.on('end', async () => {
+        userStopped = false;
         res.writeHead(200); res.end('ok');
-        const text = await optimize(body.trim());
-        sendSSE({ type: 'reoptimized', text, error: !text });
+        const text = await runGeminiAsync(body.trim(), modelIdx);
+        if (!userStopped) {
+          sendSSE({ type: 'reoptimized', text, error: !text });
+        }
       });
       return;
     }
@@ -360,10 +481,13 @@ async function main() {
     process.stderr.write('\x1b]0;⚡ SHERPA: Edit prompt in browser then return here\x07');
     openBrowser(`http://127.0.0.1:${port}`);
 
-    // Run optimization concurrently — browser shows spinner, SSE delivers result when ready
     try {
       const optimized = await optimize(originalPrompt);
-      sendSSE({ type: 'ready', original: originalPrompt, optimized, error: !optimized });
+      if (userStopped) {
+        sendSSE({ type: 'stopped' });
+      } else {
+        sendSSE({ type: 'ready', original: originalPrompt, optimized, error: !optimized });
+      }
     } catch (e) {
       toStderr('Optimizer error: ' + e.message);
       sendSSE({ type: 'ready', original: originalPrompt, optimized: null, error: true });

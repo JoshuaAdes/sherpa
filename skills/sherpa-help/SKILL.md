@@ -29,7 +29,7 @@ When Sherpa spots a delegatable task, it asks:
 | **sherpa-search** | `/sherpa:search [query]` | Gemini web search via native Google Search |
 | **sherpa-onboard** | `/sherpa:onboard` | Quick or deep project map via Gemini |
 | **sherpa-handoff** | `/sherpa:handoff` | Package session context → `sherpa-handoff.md` → Codex drives |
-| **sherpa-prompt-optimizer** | `/sherpa:prompt-optimizer [prompt]` | Gemini rewrites for clarity + token-efficiency · browser editor opens · edit directly · click "Use It" |
+| **sherpa-prompt-optimizer** *(beta)* | `/sherpa:prompt-optimizer [prompt]` | Gemini (Flash Lite default) rewrites for clarity + token-efficiency · browser editor · model picker · re-optimize active card · click "Use It" |
 | **sherpa-help** | `/sherpa-help` | This card |
 
 ## What Gets Delegated

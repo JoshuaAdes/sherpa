@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.5.2 — 2026-05-13
+
+### Prompt Optimizer
+- MODEL_CHAIN reordered Flash-Lite → Flash → Pro (fastest first, free tier first)
+- Real-time stderr monitoring: kill on `MODEL_CAPACITY_EXHAUSTED` / `No capacity available` → instant model fallback (no 45s hang)
+- UI model selector: Flash Lite (default) · Flash · Pro pill buttons — user picks quality level
+- Re-optimize uses active (blue-bordered) card content, not always original
+- Button label updates dynamically: "Re-optimize Original" / "Re-optimize Optimized"
+- Stderr logged on non-quota failure for debuggability
+
+### Skill Protocol — Hard Stops
+- `sherpa-onboard`, `sherpa-brainstorm`, `sherpa-delegation`: replaced soft `> Sherpa:` display hints with `HARD STOP: Call AskUserQuestion` — model cannot skip or simulate
+- `[P]` redefined as `AskUserQuestion` call before any Gemini/Codex delegation
+- `[G]`/`[C]` definitions inlined in `sherpa-onboard` and `sherpa-brainstorm` skill files
+- Explicit C (Claude direct) and N (abort) branches added to onboard + brainstorm
+
+### Docs
+- README: optimizer mode (beta) + commands table entry
+- sherpa-help skill: optimizer entry updated with beta label, Gemini note, model picker
+- CLAUDE.md: stale `sherpa-session-log.ps1` reference fixed; optimizer hooks + skill added to File Roles
+
+---
+
 ## 0.5.1 — 2026-05-10
 - Unified all hooks into cross-platform Node.js implementation
 - New `sherpa-logger.js` replaces PowerShell/Python session logging

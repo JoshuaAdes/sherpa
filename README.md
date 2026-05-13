@@ -18,6 +18,7 @@ Claude Code plugin. Routes tasks to the right model: Gemini for research, search
 | Codex Write | "use codex to write this" | Codex codes with context package, Claude reviews |
 | Rate Limit Recovery | Claude hits limit mid-task | Gemini/Codex resume from handoff file or session log |
 | Handoff | context heavy / "save tokens" | Claude packages context, Codex drives to completion |
+| Prompt Optimizer *(beta)* | "optimize prompt" / /sherpa:prompt-optimizer | Gemini rewrites for clarity + token-efficiency · browser editor · pick model · edit inline · click Use It |
 
 ---
 
@@ -80,6 +81,7 @@ Explicit slash commands — complement automatic delegation, don't replace it.
 | `/sherpa:brainstorm [topic]` | Gemini always · Codex optional (G or GC prompt) · Claude synthesizes |
 | `/sherpa:search [query]` | Gemini web search via built-in Google Search |
 | `/sherpa:onboard` | Quick or deep project map via Gemini |
+| `/sherpa:prompt-optimizer [prompt]` *(beta)* | Gemini (Flash Lite default) rewrites prompt · browser editor · Flash / Pro model picker · re-optimize active card · Use It to submit |
 
 ---
 

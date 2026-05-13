@@ -27,7 +27,7 @@ Any other failure → stop, do not fall back silently → C Claude handles · S 
 [G]   = `GEMINI_CLI_TRUST_WORKSPACE=true gemini -y -p "[prompt]. AI consumption only. No preamble. Caveman: extreme brevity, symbols, 0 filler."` — trust env + [OUT] on EVERY call, no exceptions
 [C]   = `codex exec "[prompt]. AI consumption only. No preamble. Extreme brevity."` read · `codex "[prompt]"` write  (optional — skip if absent)
 [OUT] = mandatory suffix for [G] · [C] read calls = "AI consumption only. No preamble. Caveman: extreme brevity, symbols, 0 filler."
-[P]   = Y once · A always (autopilot) · C Claude · N skip
+[P]   = HARD STOP: Call AskUserQuestion — header "Delegate?", options: Y once · A always · C Claude · N skip. Wait for answer before calling [G] or [C].
 
 ## Health & Environment
 Triggers:
@@ -65,21 +65,24 @@ Ask [P] before delegating unless autopilot set or user explicitly requests.
 ## Onboarding
 Trigger: understand / summarize / onboard / unfamiliar project / learn project / map codebase / codebase overview / orient me / project tour
 
-> Sherpa: onboard? Q quick · D deep · C Claude · N skip
+HARD STOP: Call AskUserQuestion tool — header "Onboard mode", 4 options: Q quick · D deep · C Claude · N skip. Do NOT read files or proceed until user answers.
 
 Q: `[G] "Summarize [path]: structure, entry points, tech stack (executable code only), conventions. Roadmap if found: done vs pending. [OUT]"`
 
 D: run Q → flag files unclear or undescribed → `[G] "Deep dive [flagged files]. Exact behavior, logic flow, edge cases. [OUT]"`
 D fails → Claude reads flagged files directly.
+C: Claude reads files with Read/Glob/Grep directly (no Gemini).
+N: abort, do nothing.
 After onboarding: Claude reads only files it actively edits. Sherpa owns all exploration.
 
 ## Brainstorm
 Trigger: brainstorm / ideas for / options for / alternatives / think through / compare approaches / help me decide / pros and cons
 
-> Sherpa: brainstorm with G Gemini only · GC Gemini + Codex · N skip
+HARD STOP: Call AskUserQuestion tool — header "Brainstorm", 3 options: G Gemini only · GC Gemini + Codex · N skip. Do NOT generate ideas or proceed until user answers.
 
 G: `[G] "7 alternatives for [topic]. Each: name · tradeoff · 1 sentence. [OUT]"` → Claude synthesizes.
 GC: run G → `[C] exec "Alternatives for [topic]. Each: approach · tradeoff · 3-line sketch. [OUT]"` → Claude synthesizes all.
+N: abort, do nothing.
 Final call: Claude only.
 
 ## Plan Review
@@ -97,7 +100,7 @@ Claude reviews all [C] output before marking task complete.
 ## Handoff
 Trigger: context pressure · "hand off" · "continue with codex" · "save tokens"
 
-> Sherpa: context heavy — hand off to [C]? Y · C keep going · N stop
+HARD STOP: Call AskUserQuestion tool — header "Handoff", 3 options: Y hand off · C keep going · N stop. Wait for answer.
 
 If Y:
 1. Write `sherpa-handoff.md` (machine-compressed):
