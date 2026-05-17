@@ -26,6 +26,7 @@ When Sherpa spots a delegatable task, it asks:
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
 | **sherpa-brainstorm** | `/sherpa:brainstorm [topic]` | G: Gemini only · GC: Gemini + Codex · Claude synthesizes |
+| **sherpa-git-haiku** | `/sherpa:git-haiku [task]` | Commit msg · diff summary · branch name · status summary via Haiku (fast + cheap) |
 | **sherpa-search** | `/sherpa:search [query]` | Gemini web search via native Google Search |
 | **sherpa-onboard** | `/sherpa:onboard` | Quick or deep project map via Gemini |
 | **sherpa-handoff** | `/sherpa:handoff` | Package session context → `sherpa-handoff.md` → Codex drives |

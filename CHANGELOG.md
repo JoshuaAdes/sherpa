@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.5.3 — 2026-05-17
+
+### sherpa-brainstorm — Fix CLI invocation
+- `[G]` and `[C]` now labeled `Bash tool ONLY` — prevents Claude from spawning fake-identity subagents instead of running real CLIs
+- Added `TOOL RULE` hard stop: NEVER Agent tool, NEVER impersonate Gemini/Codex as subagent
+- GC branch: both Bash calls now explicitly run in parallel
+- Fix: `[C]` definition was missing `Bash:` prefix (matched `[G]` style)
+
+### New skill: sherpa-git-haiku
+- Git operations (commit msg, diff summary, branch name, status summary) routed to Haiku model
+- Trigger: `/sherpa:git-haiku [task]`
+- Spawns `Agent(model="haiku")` — Sonnet forbidden from generating the artifact directly
+- Listed in sherpa-help skills table
+
+### Tests
+- Added `runSkillTest` helper to `tests/hook-golden-io.js`
+- 8 new skill validation tests (brainstorm enforcement + git-haiku structure)
+- Total: 25 tests, all passing
+
 ## 0.5.2 — 2026-05-13
 
 ### Prompt Optimizer
