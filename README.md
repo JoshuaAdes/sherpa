@@ -12,13 +12,14 @@ Claude Code plugin. Routes tasks to the right model: Gemini for research, search
 |---|---|---|
 | Delegation | large file, log, codebase | Delegate reads/searches, Claude gets summary |
 | Web Search | search / look up / docs for | Gemini uses native Google Search — faster, no Claude WebFetch tokens |
-| Onboarding | "understand this project" | Quick or deep project map, no broad Claude reads |
+| Onboarding | "understand this project" | Q (quick Gemini) · GC (Gemini + Codex parallel, gap-fill loop, critical analysis) · X (Codex only) |
 | Brainstorm | "brainstorm alternatives for X" | Gemini always · Codex optional (user chooses) · Claude synthesizes |
 | Plan Review | before complex implementation | Delegate flags edge cases and failure points |
 | Codex Write | "use codex to write this" | Codex codes with context package, Claude reviews |
 | Rate Limit Recovery | Claude hits limit mid-task | Gemini/Codex resume from handoff file or session log |
 | Handoff | context heavy / "save tokens" | Claude packages context, Codex drives to completion |
-| Prompt Optimizer *(beta)* | "optimize prompt" / /sherpa:prompt-optimizer | Gemini rewrites for clarity + token-efficiency · browser editor · pick model · edit inline · click Use It |
+| Prompt Optimizer *(beta)* | "optimize prompt" / /sherpa:prompt-optimizer | Gemini/Claude/Codex rewrites for clarity + token-efficiency · browser editor · pick model · Codex models auto-discovered per account · edit inline · click Use It |
+| Optimize Mode *(beta)* | /sherpa:optimize-mode on\|off | Persistent auto-optimize every prompt · choose backend · toggle off anytime |
 
 ---
 
@@ -81,7 +82,7 @@ Explicit slash commands — complement automatic delegation, don't replace it.
 | `/sherpa:brainstorm [topic]` | Gemini always · Codex optional (G or GC prompt) · Claude synthesizes |
 | `/sherpa:search [query]` | Gemini web search via built-in Google Search |
 | `/sherpa:onboard` | Quick or deep project map via Gemini |
-| `/sherpa:prompt-optimizer [prompt]` *(beta)* | Gemini (Flash Lite default) rewrites prompt · browser editor · Flash / Pro model picker · re-optimize active card · Use It to submit |
+| `/sherpa:prompt-optimizer [prompt]` *(beta)* | Gemini/Claude/Codex rewrites prompt · browser editor · backend + model picker · Codex models auto-discovered per account · re-optimize active card · Use It to submit |
 
 ---
 

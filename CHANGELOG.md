@@ -1,5 +1,73 @@
 # Changelog
 
+## 0.5.7 — 2026-05-31
+
+### Prompt Optimizer — Dynamic Codex model discovery
+
+- **Auto-detect supported Codex models** per user's account tier — no hardcoded list
+  - Probe fires lazily (on first Codex backend click, or immediately if `--backend codex`)
+  - Sequential probe: candidate list `['gpt-5.4-mini', 'gpt-5.5', 'gpt-5.5-codex', 'gpt-5-codex', 'gpt-5']`, 15s timeout per candidate
+  - Error taxonomy: `not supported` → rejected · auth/401/403 → abort · timeout/ENOENT → transient (not cached)
+  - Results sent to browser via SSE `{type:'codex-models', models:[...]}` → buttons update live
+- **Cache** `~/.sherpa/codex-models.json` — atomic write (tmp+rename), schema validation, allowlist regex on read, 24h TTL, invalidated on CLI version change
+- **Browser UX**: Codex model row shows `Detecting…` during probe, then discovered model IDs as buttons
+- **Fallback**: if all probes fail, shows hardcoded `['gpt-5.4-mini', 'gpt-5.5']` — optimizer still usable
+- **Security**: `sanitizeEnv()` strips secrets from child process env; ENOENT handled gracefully; all model IDs validated against `/^[a-z0-9.\-]+$/i` before use
+- `/probe-codex` POST endpoint triggers detection; nonce-protected
+
+## 0.5.6 — 2026-05-31
+
+### Prompt Optimizer — Claude backend + Codex fix + UX improvements
+
+- **Claude backend** (replaces separate Haiku/Sonnet/Opus backends): unified `--backend claude` with Haiku/Sonnet/Opus model picker in UI
+  - CLI-only, no `ANTHROPIC_API_KEY` — uses `claude --model X -p "..."` CLI
+  - Legacy `--backend haiku|sonnet|opus` still accepted (maps to claude + correct model key)
+- **Codex backend** fixed: `codex exec "instruction"` with no `-m` flag — matches brainstorm [C] pattern exactly
+  - ChatGPT accounts reject all explicit model flags; default auto-selected model works
+  - Model row hidden for Codex backend (no sub-model variants available)
+  - 60s timeout; reads stdout or temp file fallback; ANSI stripped; stderr shown on failure
+- **Stop/cancel fixed**: `pendingDone` global force-resolves any pending optimization immediately on stop — covers hung processes, slow kill, 60s Codex timer, all boundary cases
+- **Session expired UX**: server sends `{type:'expired'}` SSE before shutting down; browser shows "Session expired — run again" message; `es.onerror` handler catches dead server on page reload
+- Backend buttons: Gemini · Claude · Codex (replaces Gemini · Haiku)
+- Model row: visible for Gemini + Claude, hidden for Codex
+- Initial model active button reflects `--backend` arg (e.g. `--backend sonnet` → Claude backend, Sonnet active)
+- `CLAUDE_MODEL_IDS` map: lite→haiku-4-5, flash→sonnet-4-6, pro→opus-4-7
+
+## 0.5.5 — 2026-05-31
+
+### Onboard — GC parallel mode + completion loop
+- Options restructured: Q (quick Gemini) · GC (deep, Gemini + Codex parallel) · X (Codex exec only) · N — drops D (deep Gemini solo), GC supersedes it
+- GC flow: parallel [G]+[X] → [CRIT] both → Claude identifies gaps → Round 1 gap-fill (Codex or Gemini) → [CRIT] → Round 2 if needed → [CRIT] → Claude self-check (Read/Glob/Grep) → synthesize
+- Naming matches brainstorm style (GC not P) with descriptions in parens
+- `sherpa-onboard/SKILL.md` + Onboarding section of `sherpa-delegation/SKILL.md` both updated
+
+### [CRIT] macro — global critical analysis
+- New `[CRIT]` shorthand: flag conflicting claims · Glob/Grep verify file paths/function names · note speculative claims · proceed only on verified info
+- Added to `sherpa-delegation/SKILL.md` DSL block with global rule: apply after EVERY [G]/[C] call, no exceptions
+- Inlined in `sherpa-onboard/SKILL.md` (standalone skill, needs own definition)
+- Added to `sherpa-brainstorm/SKILL.md` after G and GC synthesis steps
+
+### Beta labels
+- `sherpa-optimize-mode` consistently tagged (beta) in: skill frontmatter · sherpa-help skills table · README
+
+## 0.5.4 — 2026-05-31
+
+### Onboard — Codex option
+- New X (Codex exec) option replaces C (Claude direct) as primary choice — Claude direct remains automatic fallback on failure
+- `sherpa-onboard` + `sherpa-delegation` Onboarding section both updated: options now Q quick (Gemini) · D deep (Gemini) · X Codex · N skip
+
+### Prompt Optimizer — Codex backend
+- `optimizeWithCodex()` added to `sherpa-prompt-optimizer-ui.js` — spawns `codex exec`, strips ANSI codes
+- `SHERPA_OPTIMIZER_BACKEND=codex` / `--backend codex` now valid
+- `reoptimize` endpoint uses `optimize()` dispatch instead of hardcoded `runGeminiAsync` — Haiku/Codex now re-optimize correctly
+
+### New skill: sherpa-optimize-mode
+- `/sherpa:optimize-mode on [backend]` — writes `~/.sherpa-optimize-mode` flag file with backend choice
+- `/sherpa:optimize-mode off` — deletes flag file, deactivates
+- Backend choices: Gemini (free default) · Haiku (Claude-aligned) · Codex (code-focused)
+- `sherpa-optimizer.js` hook reads flag: if active, injects mandatory system-reminder to invoke optimizer before every prompt
+- Deactivation commands automatically skipped by hook (no optimize-loop on control prompts)
+
 ## 0.5.3 — 2026-05-17
 
 ### sherpa-brainstorm — Fix CLI invocation

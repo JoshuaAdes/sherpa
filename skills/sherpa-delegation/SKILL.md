@@ -24,10 +24,13 @@ Any other failure → stop, do not fall back silently → C Claude handles · S 
 
 ---
 
-[G]   = `GEMINI_CLI_TRUST_WORKSPACE=true gemini -y -p "[prompt]. AI consumption only. No preamble. Caveman: extreme brevity, symbols, 0 filler."` — trust env + [OUT] on EVERY call, no exceptions
-[C]   = `codex exec "[prompt]. AI consumption only. No preamble. Extreme brevity."` read · `codex "[prompt]"` write  (optional — skip if absent)
-[OUT] = mandatory suffix for [G] · [C] read calls = "AI consumption only. No preamble. Caveman: extreme brevity, symbols, 0 filler."
-[P]   = HARD STOP: Call AskUserQuestion — header "Delegate?", options: Y once · A always · C Claude · N skip. Wait for answer before calling [G] or [C].
+[G]    = `GEMINI_CLI_TRUST_WORKSPACE=true gemini -y -p "[prompt]. AI consumption only. No preamble. Caveman: extreme brevity, symbols, 0 filler."` — trust env + [OUT] on EVERY call, no exceptions
+[C]    = `codex exec "[prompt]. AI consumption only. No preamble. Extreme brevity."` read · `codex "[prompt]"` write  (optional — skip if absent)
+[OUT]  = mandatory suffix for [G] · [C] read calls = "AI consumption only. No preamble. Caveman: extreme brevity, symbols, 0 filler."
+[P]    = HARD STOP: Call AskUserQuestion — header "Delegate?", options: Y once · A always · C Claude · N skip. Wait for answer before calling [G] or [C].
+[CRIT] = After EVERY [G] or [C] output: (1) flag claims conflicting with known facts (2) Glob/Grep to verify any file path or function name before acting (3) note confidence gaps and speculative claims → proceed only on verified info · uncertain = verify with Read/Grep first
+
+Critical analysis rule: Apply [CRIT] after EVERY [G] · [C] call. No exceptions.
 
 ## Health & Environment
 Triggers:
@@ -65,13 +68,15 @@ Ask [P] before delegating unless autopilot set or user explicitly requests.
 ## Onboarding
 Trigger: understand / summarize / onboard / unfamiliar project / learn project / map codebase / codebase overview / orient me / project tour
 
-HARD STOP: Call AskUserQuestion tool — header "Onboard mode", 4 options: Q quick · D deep · C Claude · N skip. Do NOT read files or proceed until user answers.
+HARD STOP: Call AskUserQuestion tool — header "Onboard mode", 4 options: Q (quick, Gemini only) · GC (deep, Gemini + Codex parallel) · X (Codex exec only) · N (skip). Do NOT read files or proceed until user answers.
 
-Q: `[G] "Summarize [path]: structure, entry points, tech stack (executable code only), conventions. Roadmap if found: done vs pending. [OUT]"`
+Q: `[G] "Summarize [path]: structure, entry points, tech stack (executable code only), conventions. Roadmap if found: done vs pending. [OUT]"` → [CRIT] output.
 
-D: run Q → flag files unclear or undescribed → `[G] "Deep dive [flagged files]. Exact behavior, logic flow, edge cases. [OUT]"`
-D fails → Claude reads flagged files directly.
-C: Claude reads files with Read/Glob/Grep directly (no Gemini).
+GC: run both in parallel → [CRIT] both → identify gaps → Round 1 gap-fill ([C] or [G]) → [CRIT] → Round 2 if needed → [CRIT] → Claude self-check (Read/Glob/Grep) → synthesize.
+Full protocol in sherpa-onboard/SKILL.md.
+
+X: `codex exec "Summarize [path]: structure, entry points, tech stack (executable code only), conventions. Roadmap if found. AI consumption only. No preamble. Extreme brevity."` → [CRIT] output.
+X fails → Claude reads flagged files directly.
 N: abort, do nothing.
 After onboarding: Claude reads only files it actively edits. Sherpa owns all exploration.
 

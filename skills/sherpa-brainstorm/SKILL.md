@@ -13,14 +13,18 @@ Args: topic from user input.
 
 TOOL RULE: [G] and [C] are Bash tool calls ONLY. NEVER use Agent tool. NEVER spawn subagents for [G] or [C]. NEVER impersonate Gemini or Codex as a Claude subagent.
 
+[CRIT] = flag speculative/conflicting alternatives · note unverified claims · Claude proceeds on verified options only.
+
 HARD STOP: Call AskUserQuestion tool — header "Brainstorm", 3 options: G Gemini only · GC Gemini + Codex · N skip. Do NOT generate ideas or proceed until user answers.
 
 G:
 1. `[G] "7 alternatives for [topic]. Each: name · tradeoff · 1 sentence. [OUT]"`
-2. Claude synthesizes, applies constraints, decides. Final call: Claude only.
+2. [CRIT] output: flag speculative alternatives, conflicts with constraints, unverified claims.
+3. Claude synthesizes, applies constraints, decides. Final call: Claude only.
 
 GC:
 1. `[G] "7 alternatives for [topic]. Each: name · tradeoff · 1 sentence. [OUT]"` and `[C] "Alternatives for [topic]. Each: approach · tradeoff · 3-line sketch. [OUT]"` — run both Bash calls in parallel
-2. Claude synthesizes all output, applies constraints, decides. Final call: Claude only.
+2. [CRIT] both outputs: flag conflicts between sources, speculative alternatives, unverified claims.
+3. Claude synthesizes all output, applies constraints, decides. Final call: Claude only.
 
 N: abort, do nothing.
