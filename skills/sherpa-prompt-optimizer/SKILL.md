@@ -7,4 +7,4 @@ description: >
   SKIP: user gives a direct implementation command (not asking to optimize a prompt).
 ---
 
-Hook emits bare node command — run it (blocking, no timeout). stdout JSON {status,text}: status=submit→execute text as task; cancel/timeout→inform user, stop.
+Run hook cmd (blocking). JSON→submit=exec text,else stop.

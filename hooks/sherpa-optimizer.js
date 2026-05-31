@@ -24,7 +24,7 @@ async function main() {
       return;
     }
 
-    // ── /sherpa:prompt-optimizer — emit bare node command, Claude runs it (blocking) ──
+    // ── /sherpa:prompt-optimizer — emit absolute-path node command, Claude runs it (blocking) ──
     const SKILL_RE = /^\/sherpa:(?:sherpa-)?prompt-optimizer\b/i;
     if (SKILL_RE.test(prompt)) {
       let remaining = prompt.replace(SKILL_RE, '').trim();
@@ -38,11 +38,14 @@ async function main() {
           if (mode && mode.backend) triggerBackend = mode.backend;
         } catch (_) {}
       }
+      let pluginRoot = '';
+      try { pluginRoot = fs.readFileSync(path.join(os.homedir(), '.sherpa-plugin-root'), 'utf8').trim(); } catch (_) {}
+      const scriptPath = pluginRoot
+        ? path.join(pluginRoot, 'hooks', 'sherpa-prompt-optimizer-ui.js')
+        : path.join(__dirname, 'sherpa-prompt-optimizer-ui.js');
       const backendFlag = triggerBackend ? ` --backend ${triggerBackend}` : '';
       const promptArg  = remaining ? ` "${remaining.replace(/"/g, '\\"')}"` : '';
-      process.stdout.write(
-        `node "$env:CLAUDE_PLUGIN_ROOT/hooks/sherpa-prompt-optimizer-ui.js"${promptArg}${backendFlag}`
-      );
+      process.stdout.write(`node "${scriptPath}"${promptArg}${backendFlag}`);
       return;
     }
 
