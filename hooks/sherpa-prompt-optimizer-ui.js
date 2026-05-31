@@ -925,7 +925,7 @@ async function main() {
       sendSSE({ type: 'expired' }); // notify browser before server dies
       setTimeout(() => finish(server, 'timeout', originalPrompt), 500);
     }
-  }, 5 * 60 * 1000).unref();
+  }, 30 * 60 * 1000).unref();
 }
 
 main().catch(e => {

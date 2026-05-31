@@ -1,42 +1,13 @@
 // UserPromptSubmit hook — three modes:
-// 1. /sherpa:prompt-optimizer or !!opt [--backend X] [prompt] → launches optimizer directly, no skill overhead
-// 2. Long prompt / optimize-mode active → soft-suggest or mandatory reminder
+// 1. /sherpa:prompt-optimizer [--backend X] [prompt] → emits bare node command; Claude runs it (blocking)
+// 2. optimize-mode active → mandatory reminder
+// 3. Long prompt → soft-suggest
 'use strict';
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawn } = require('child_process');
 
 const OPTIMIZE_MODE_FLAG = path.join(os.homedir(), '.sherpa-optimize-mode');
-const PLUGIN_ROOT_FLAG   = path.join(os.homedir(), '.sherpa-plugin-root');
-const OPTIMIZER_FILENAME = 'sherpa-prompt-optimizer-ui.js';
-
-function getOptimizerPath() {
-  try {
-    const root = fs.readFileSync(PLUGIN_ROOT_FLAG, 'utf8').trim();
-    const p = path.join(root, 'hooks', OPTIMIZER_FILENAME);
-    if (fs.existsSync(p)) return p;
-  } catch (_) {}
-  return path.join(__dirname, OPTIMIZER_FILENAME);
-}
-
-async function runOptimizer(promptText, backend) {
-  return new Promise((resolve) => {
-    const nodeArgs = [getOptimizerPath()];
-    if (promptText) nodeArgs.push(promptText);
-    if (backend)    { nodeArgs.push('--backend'); nodeArgs.push(backend); }
-    const child = spawn(process.execPath, nodeArgs, {
-      stdio: ['ignore', 'pipe', 'inherit'] // stdin:ignored, stdout:captured, stderr:shown in terminal
-    });
-    let stdout = '';
-    child.stdout.on('data', d => { stdout += d; });
-    child.on('error', () => resolve(null));
-    child.on('close', () => {
-      try { resolve(JSON.parse(stdout.trim())); }
-      catch (_) { resolve(null); }
-    });
-  });
-}
 
 async function main() {
   let input = '';
@@ -53,15 +24,13 @@ async function main() {
       return;
     }
 
-    // ── /sherpa:prompt-optimizer or !!opt — run optimizer directly, no skill overhead ──
+    // ── /sherpa:prompt-optimizer — emit bare node command, Claude runs it (blocking) ──
     const SKILL_RE = /^\/sherpa:(?:sherpa-)?prompt-optimizer\b/i;
-    if (SKILL_RE.test(prompt) || /^!!opt\b/i.test(prompt)) {
-      let remaining = prompt.replace(SKILL_RE, '').replace(/^!!opt\s*/i, '').trim();
+    if (SKILL_RE.test(prompt)) {
+      let remaining = prompt.replace(SKILL_RE, '').trim();
       let triggerBackend = null;
       const backendMatch = remaining.match(/^--backend\s+(\S+)\s*/i);
       if (backendMatch) { triggerBackend = backendMatch[1]; remaining = remaining.slice(backendMatch[0].length).trim(); }
-
-      // Fall back to optimize-mode backend if no explicit flag
       if (!triggerBackend) {
         try {
           const modeRaw = fs.readFileSync(OPTIMIZE_MODE_FLAG, 'utf8').trim();
@@ -69,15 +38,11 @@ async function main() {
           if (mode && mode.backend) triggerBackend = mode.backend;
         } catch (_) {}
       }
-
-      const result = await runOptimizer(remaining, triggerBackend);
-      if (result && result.status === 'submit' && result.text) {
-        process.stdout.write('Sherpa: prompt optimized in browser. Execute:\n\n' + result.text);
-      } else if (result && result.status === 'cancel') {
-        process.stdout.write('Sherpa: optimizer cancelled — prompt not submitted.');
-      } else if (!result) {
-        process.stdout.write('Sherpa: optimizer failed to launch.');
-      }
+      const backendFlag = triggerBackend ? ` --backend ${triggerBackend}` : '';
+      const promptArg  = remaining ? ` "${remaining.replace(/"/g, '\\"')}"` : '';
+      process.stdout.write(
+        `node "$env:CLAUDE_PLUGIN_ROOT/hooks/sherpa-prompt-optimizer-ui.js"${promptArg}${backendFlag}`
+      );
       return;
     }
 

@@ -7,4 +7,4 @@ description: >
   SKIP: user gives a direct implementation command (not asking to optimize a prompt).
 ---
 
-Handled by UserPromptSubmit hook — no action needed. Hook launches optimizer, browser opens, result returned automatically.
+Hook emits bare node command — run it (blocking, no timeout). stdout JSON {status,text}: status=submit→execute text as task; cancel/timeout→inform user, stop.

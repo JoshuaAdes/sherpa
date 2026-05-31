@@ -1,15 +1,15 @@
 # Changelog
 
-## 0.5.9 — 2026-05-31
+## 0.5.9 — 2026-06-01
 
-### Prompt Optimizer — hook-intercepted trigger (near-zero Claude tokens)
+### Prompt Optimizer — hook-intercepted trigger, minimal token overhead
 
-- `/sherpa:prompt-optimizer` (visible in `/` autocomplete) now intercepted by hook — skill never invoked, no approval popup
-- `!!opt [prompt]` also works as shorthand trigger
-- Both: hook runs optimizer directly, browser opens, user optimizes, result injected for Claude — ~15 token overhead vs ~800 via skill
+- `/sherpa:prompt-optimizer` (visible in `/` autocomplete) intercepted by hook — hook emits bare node command (~8 tokens), Claude runs it (blocking, no timeout) — browser session stays open as long as needed
 - Empty trigger (`/sherpa:prompt-optimizer` with no args) → browser opens in input mode (paste/type prompt there)
-- `--backend X` flag supported in both triggers; falls back to optimize-mode backend if set
+- `--backend X` flag supported; falls back to optimize-mode backend if set
+- Removed `!!opt` hidden shorthand — users only need the discoverable slash command
 - All existing behaviors preserved (long-prompt suggest, optimize-mode mandatory reminder)
+- JSON-handling instruction moved to SKILL.md (loaded once per session) — further reduces per-invocation overhead
 
 ## 0.5.8 — 2026-05-31
 
