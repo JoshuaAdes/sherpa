@@ -1,29 +1,86 @@
-// UserPromptSubmit hook — soft-suggests optimizer for long prompts; mandatory in optimize-mode.
-// Optimize mode: flag file ~/.sherpa-optimize-mode contains {"backend":"gemini"|"haiku"|"codex"}
+// UserPromptSubmit hook — two modes:
+// 1. !!opt [--backend X] [prompt] → launches optimizer directly, injects result, no skill overhead
+// 2. Long prompt / optimize-mode active → soft-suggest or mandatory reminder
+'use strict';
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { spawn } = require('child_process');
 
 const OPTIMIZE_MODE_FLAG = path.join(os.homedir(), '.sherpa-optimize-mode');
+const PLUGIN_ROOT_FLAG   = path.join(os.homedir(), '.sherpa-plugin-root');
+const OPTIMIZER_FILENAME = 'sherpa-prompt-optimizer-ui.js';
+
+function getOptimizerPath() {
+  try {
+    const root = fs.readFileSync(PLUGIN_ROOT_FLAG, 'utf8').trim();
+    const p = path.join(root, 'hooks', OPTIMIZER_FILENAME);
+    if (fs.existsSync(p)) return p;
+  } catch (_) {}
+  return path.join(__dirname, OPTIMIZER_FILENAME);
+}
+
+async function runOptimizer(promptText, backend) {
+  return new Promise((resolve) => {
+    const nodeArgs = [getOptimizerPath()];
+    if (promptText) nodeArgs.push(promptText);
+    if (backend)    { nodeArgs.push('--backend'); nodeArgs.push(backend); }
+    const child = spawn(process.execPath, nodeArgs, {
+      stdio: ['ignore', 'pipe', 'inherit'] // stdin:ignored, stdout:captured, stderr:shown in terminal
+    });
+    let stdout = '';
+    child.stdout.on('data', d => { stdout += d; });
+    child.on('error', () => resolve(null));
+    child.on('close', () => {
+      try { resolve(JSON.parse(stdout.trim())); }
+      catch (_) { resolve(null); }
+    });
+  });
+}
 
 async function main() {
   let input = '';
   try {
-    for await (const chunk of process.stdin) {
-      input += chunk;
-    }
+    for await (const chunk of process.stdin) { input += chunk; }
     if (!input) return;
     const data = JSON.parse(input);
     const prompt = data.prompt;
-    if (!prompt) return;
+    if (!prompt && prompt !== '') return;
 
-    // Skip all optimize-mode control commands — never optimize meta-control prompts
+    // Skip optimize-mode control commands
     if (/sherpa.*optimize.?mode/i.test(prompt) ||
         /optimize.?mode\s*(on|off|disable|stop|deactivat)/i.test(prompt)) {
       return;
     }
 
-    // Check optimize mode flag
+    // ── !!opt trigger — run optimizer directly, no skill overhead ──────────────
+    if (/^!!opt\b/i.test(prompt)) {
+      let remaining = prompt.replace(/^!!opt\s*/i, '').trim();
+      let triggerBackend = null;
+      const backendMatch = remaining.match(/^--backend\s+(\S+)\s*/i);
+      if (backendMatch) { triggerBackend = backendMatch[1]; remaining = remaining.slice(backendMatch[0].length).trim(); }
+
+      // Fall back to optimize-mode backend if no explicit flag
+      if (!triggerBackend) {
+        try {
+          const modeRaw = fs.readFileSync(OPTIMIZE_MODE_FLAG, 'utf8').trim();
+          const mode = JSON.parse(modeRaw);
+          if (mode && mode.backend) triggerBackend = mode.backend;
+        } catch (_) {}
+      }
+
+      const result = await runOptimizer(remaining, triggerBackend);
+      if (result && result.status === 'submit' && result.text) {
+        process.stdout.write('Sherpa: prompt optimized in browser. Execute:\n\n' + result.text);
+      } else if (result && result.status === 'cancel') {
+        process.stdout.write('Sherpa: optimizer cancelled — prompt not submitted.');
+      } else if (!result) {
+        process.stdout.write('Sherpa: optimizer failed to launch.');
+      }
+      return;
+    }
+
+    // ── optimize-mode active — mandatory reminder ──────────────────────────────
     let optimizeMode = null;
     try {
       const raw = fs.readFileSync(OPTIMIZE_MODE_FLAG, 'utf8').trim();
@@ -41,7 +98,7 @@ async function main() {
       return;
     }
 
-    // Soft suggest for long prompts (200 chars ≈ ~50 tokens)
+    // ── soft suggest for long prompts ──────────────────────────────────────────
     if (prompt.length <= 200) return;
     process.stdout.write("Sherpa: long prompt detected — run /sherpa:prompt-optimizer to refine.\n");
   } catch (err) {

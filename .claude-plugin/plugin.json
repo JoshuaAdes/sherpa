@@ -1,6 +1,6 @@
 {
   "name": "sherpa",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "description": "Delegates low-logic tasks to Gemini/Codex CLIs. Claude stays master orchestrator. Saves input tokens via delegation, brainstorming, and context handoff. Writes rolling session log for rate-limit recovery. Prompt optimizer with browser editor.",
   "author": { "name": "Joshua Ades" },
   "license": "MIT + Commons Clause",
