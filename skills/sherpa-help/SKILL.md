@@ -30,7 +30,7 @@ When Sherpa spots a delegatable task, it asks:
 | **sherpa-search** | `/sherpa:search [query]` | Gemini web search via native Google Search |
 | **sherpa-onboard** | `/sherpa:onboard` | Q (quick Gemini) · GC (deep, Gemini + Codex parallel + gap-fill loop) · X (Codex exec only) |
 | **sherpa-handoff** | `/sherpa:handoff` | Package session context → `sherpa-handoff.md` → Codex drives |
-| **sherpa-prompt-optimizer** *(beta)* | `/sherpa:prompt-optimizer [prompt]` | Gemini/Claude/Codex rewrites for clarity + token-efficiency · browser editor · backend + model picker · Codex models auto-discovered per account · re-optimize active card · click "Use It" |
+| **sherpa-prompt-optimizer** *(beta)* | `/sherpa:prompt-optimizer [prompt]` | Hook-intercepted (~0 token overhead) · no prompt = paste in browser · Gemini/Claude/Codex · browser editor · model picker · Codex models auto-discovered · click "Use It" |
 | **sherpa-optimize-mode** *(beta)* | `/sherpa:optimize-mode [on\|off]` | Persistent auto-optimize every prompt · choose backend (Gemini/Claude/Codex) · easy toggle off |
 | **sherpa-help** | `/sherpa-help` | This card |
 

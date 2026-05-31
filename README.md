@@ -18,7 +18,7 @@ Claude Code plugin. Routes tasks to the right model: Gemini for research, search
 | Codex Write | "use codex to write this" | Codex codes with context package, Claude reviews |
 | Rate Limit Recovery | Claude hits limit mid-task | Gemini/Codex resume from handoff file or session log |
 | Handoff | context heavy / "save tokens" | Claude packages context, Codex drives to completion |
-| Prompt Optimizer *(beta)* | "optimize prompt" / /sherpa:prompt-optimizer | Gemini/Claude/Codex rewrites for clarity + token-efficiency · browser editor · pick model · Codex models auto-discovered per account · edit inline · click Use It |
+| Prompt Optimizer *(beta)* | /sherpa:prompt-optimizer (no prompt = paste in browser) | Hook-intercepted — ~0 token overhead · Gemini/Claude/Codex rewrites · browser editor · model picker · Codex models auto-discovered · click Use It |
 | Optimize Mode *(beta)* | /sherpa:optimize-mode on\|off | Persistent auto-optimize every prompt · choose backend · toggle off anytime |
 
 ---
