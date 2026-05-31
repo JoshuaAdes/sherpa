@@ -58,12 +58,7 @@ async function main() {
 
     if (optimizeMode && optimizeMode.backend) {
       const backend = optimizeMode.backend;
-      process.stdout.write(
-        `SHERPA OPTIMIZE MODE ACTIVE (backend: ${backend}): ` +
-        `You MUST invoke /sherpa:prompt-optimizer with --backend ${backend} on this prompt BEFORE executing the task. ` +
-        `Do not proceed with the task until the user submits or cancels the optimizer. ` +
-        `Deactivate: /sherpa:optimize-mode off`
-      );
+      process.stdout.write(`OPT-MODE(${backend}): run /sherpa:prompt-optimizer --backend ${backend} before this task.`);
       return;
     }
 
