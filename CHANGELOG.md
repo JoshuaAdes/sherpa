@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.8 — 2026-05-31
+
+### Prompt Optimizer — Empty-trigger mode (paste prompt in browser)
+
+- Invoke optimizer with no prompt: `node sherpa-prompt-optimizer-ui.js [--backend X]` → browser opens with blank textarea + "Optimize →" button
+- User pastes/types prompt in browser, clicks Optimize (or Ctrl+Enter) → transitions to two-card view
+- Zero extra Claude tokens to trigger — browser does all input work
+- Existing flow unchanged: prompt provided → auto-optimizes on open as before
+- Backend + model picker visible in both modes — pick backend before clicking Optimize
+
 ## 0.5.7 — 2026-05-31
 
 ### Prompt Optimizer — Dynamic Codex model discovery

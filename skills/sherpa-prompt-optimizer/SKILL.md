@@ -7,14 +7,15 @@ description: >
   SKIP: user gives a direct implementation command (not asking to optimize a prompt).
 ---
 
-Args: prompt text + optional --backend flag.
+Args: prompt text (optional) + optional --backend flag.
 
 No delegation — Node script calls backend directly. Do NOT make a separate [G] call for this skill.
 
 Flow:
 1. Bash: `cat ~/.sherpa-plugin-root` (Win: `type %USERPROFILE%\.sherpa-plugin-root`) → PLUGIN_ROOT
 2. Run (blocking): `node "[PLUGIN_ROOT]/hooks/sherpa-prompt-optimizer-ui.js" "[prompt]" [--backend gemini|claude|codex]`
-   - Node calls backend → browser opens with optimized prompt pre-filled
+   - If prompt omitted: browser opens with input textarea — user pastes/types prompt, clicks Optimize
+   - If prompt provided: Node calls backend → browser opens with optimized prompt pre-filled
    - User edits directly in browser textarea · picks backend + model in UI
    - Clicks "Use It" or "Cancel" → Node exits, prints JSON to stdout
 3. Parse stdout JSON: `{"status":"submit"|"cancel"|"timeout","text":"..."}`

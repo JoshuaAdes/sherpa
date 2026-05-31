@@ -362,6 +362,7 @@ async function detectCodexModels(onStatus) {
 
 // ── HTML ──────────────────────────────────────────────────────────────────────
 function buildHTML(nonce, origPrompt, backendName, initialMK, cachedCodexModels) {
+  const inputMode = !origPrompt;
   const escaped = (origPrompt || '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const json = JSON.stringify(origPrompt || '');
@@ -420,6 +421,17 @@ button{padding:8px 20px;border:none;border-radius:6px;cursor:pointer;font-size:1
 
 <div id="warn-box"></div>
 
+<div id="input-mode" style="${inputMode ? '' : 'display:none'}">
+  <textarea id="input-ta" placeholder="Paste or type your prompt…" autofocus
+    style="width:100%;min-height:120px;font-size:14px;line-height:1.6;padding:12px;border:2px solid #e5e7eb;border-radius:8px;resize:vertical;font-family:inherit;outline:none;margin-bottom:10px"
+    onkeydown="if(event.ctrlKey&&event.key==='Enter')doInitialOptimize()"></textarea>
+  <div class="row">
+    <button class="btn-opt" onclick="doInitialOptimize()">Optimize →</button>
+    <button class="btn-cancel" onclick="cancelPrompt()">Cancel</button>
+  </div>
+</div>
+
+<div id="cards-mode" style="${inputMode ? 'display:none' : ''}">
 <div class="cards">
   <div class="card orig selected active" id="card-orig" onclick="activateCard('orig')">
     <div class="card-label">Original</div>
@@ -435,6 +447,16 @@ button{padding:8px 20px;border:none;border-radius:6px;cursor:pointer;font-size:1
   </div>
 </div>
 
+<div class="row">
+  <button class="btn-orig" onclick="submitOrig()">Use Original</button>
+  <button class="btn-opt" id="btn-opt" onclick="submitOpt()" disabled>Use Optimized</button>
+  <button class="btn-stop" id="btn-stop" onclick="stopOpt()">Stop</button>
+  <button class="btn-reopt" id="btn-reopt" onclick="reoptimize()">Re-optimize</button>
+  <span class="status" id="status"></span>
+  <button class="btn-cancel" onclick="cancelPrompt()">Cancel</button>
+</div>
+</div>
+
 <div class="model-row" id="backend-row">
   <span class="model-label">Backend:</span>
   <button class="btn-model${isGemini ? ' active' : ''}" id="backend-gemini" onclick="setBackend('gemini')">Gemini</button>
@@ -448,21 +470,13 @@ button{padding:8px 20px;border:none;border-radius:6px;cursor:pointer;font-size:1
   <button class="btn-model${mk === 'pro'   ? ' active' : ''}" id="model-pro"   onclick="setModel('pro')" style="${isCodex ? 'display:none' : ''}">${modelLabels[2]}</button>
 </div>
 
-<div class="row">
-  <button class="btn-orig" onclick="submitOrig()">Use Original</button>
-  <button class="btn-opt" id="btn-opt" onclick="submitOpt()" disabled>Use Optimized</button>
-  <button class="btn-stop" id="btn-stop" onclick="stopOpt()">Stop</button>
-  <button class="btn-reopt" id="btn-reopt" onclick="reoptimize()">Re-optimize</button>
-  <span class="status" id="status"></span>
-  <button class="btn-cancel" onclick="cancelPrompt()">Cancel</button>
-</div>
-
 <script>
 const nonce = '${nonce}';
-const origText = ${json};
+let origText = ${json};
 const backendLabel = ${backendLabel};
 let sel = 'orig';
-let optimizing = true;
+let optimizing = ${JSON.stringify(!inputMode)};
+let inputMode = ${JSON.stringify(inputMode)};
 let phase = 'initial'; // 'initial' | 'reoptimizing'
 let selectedModel = ${JSON.stringify(mk)};
 let selectedBackend = backendLabel.toLowerCase();
@@ -706,7 +720,29 @@ function submitOpt() {
   const ta = document.getElementById('text-opt');
   go('/submit', ta.style.display !== 'none' ? ta.value.trim() : document.getElementById('text-orig').value.trim());
 }
-function cancelPrompt() { go('/cancel', origText); }
+function doInitialOptimize() {
+  const text = document.getElementById('input-ta').value.trim();
+  if (!text) return;
+  origText = text;
+  document.getElementById('text-orig').value = text;
+  document.getElementById('input-mode').style.display = 'none';
+  document.getElementById('cards-mode').style.display = '';
+  inputMode = false;
+  optimizing = true;
+  phase = 'reoptimizing';
+  document.getElementById('btn-reopt').disabled = true;
+  document.getElementById('btn-reopt').textContent = 'Optimizing…';
+  document.getElementById('btn-stop').disabled = false;
+  document.getElementById('status').textContent =
+    'Running ' + selectedBackend.charAt(0).toUpperCase() + selectedBackend.slice(1) + '…';
+  fetch('/reoptimize?n=' + nonce + '&model=' + selectedModel + '&backend=' + selectedBackend, {
+    method: 'POST', body: text, headers: {'content-type': 'text/plain'}
+  });
+}
+function cancelPrompt() {
+  const body = inputMode ? (document.getElementById('input-ta').value.trim() || '') : origText;
+  go('/cancel', body);
+}
 if (selectedBackend === 'codex') startCodexProbe();
 </script>
 </body></html>`;
@@ -866,6 +902,8 @@ async function main() {
     const port = server.address().port;
     process.stderr.write('\x1b]0;⚡ SHERPA: Edit prompt in browser then return here\x07');
     openBrowser(`http://127.0.0.1:${port}`);
+
+    if (!originalPrompt) return; // input mode — browser POSTs to /reoptimize when ready
 
     try {
       const optimized = await optimize(originalPrompt);
