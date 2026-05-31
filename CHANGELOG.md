@@ -2,13 +2,13 @@
 
 ## 0.5.9 — 2026-05-31
 
-### Prompt Optimizer — `!!opt` hook trigger (near-zero Claude tokens)
+### Prompt Optimizer — hook-intercepted trigger (near-zero Claude tokens)
 
-- Type `!!opt` (or `!!opt my prompt`) in Claude → optimizer launches automatically, no skill overhead, no approval popup
-- Hook intercepts `UserPromptSubmit`, runs optimizer directly, injects optimized result before Claude processes
-- `!!opt` alone → browser opens in empty-trigger mode (paste/type prompt there)
-- `!!opt --backend codex` → force backend; falls back to optimize-mode backend if set
-- Claude sees only: `"Sherpa: prompt optimized in browser. Execute: [text]"` — ~15 token overhead vs ~800 via skill
+- `/sherpa:prompt-optimizer` (visible in `/` autocomplete) now intercepted by hook — skill never invoked, no approval popup
+- `!!opt [prompt]` also works as shorthand trigger
+- Both: hook runs optimizer directly, browser opens, user optimizes, result injected for Claude — ~15 token overhead vs ~800 via skill
+- Empty trigger (`/sherpa:prompt-optimizer` with no args) → browser opens in input mode (paste/type prompt there)
+- `--backend X` flag supported in both triggers; falls back to optimize-mode backend if set
 - All existing behaviors preserved (long-prompt suggest, optimize-mode mandatory reminder)
 
 ## 0.5.8 — 2026-05-31

@@ -1,5 +1,5 @@
-// UserPromptSubmit hook — two modes:
-// 1. !!opt [--backend X] [prompt] → launches optimizer directly, injects result, no skill overhead
+// UserPromptSubmit hook — three modes:
+// 1. /sherpa:prompt-optimizer or !!opt [--backend X] [prompt] → launches optimizer directly, no skill overhead
 // 2. Long prompt / optimize-mode active → soft-suggest or mandatory reminder
 'use strict';
 const fs = require('fs');
@@ -53,9 +53,10 @@ async function main() {
       return;
     }
 
-    // ── !!opt trigger — run optimizer directly, no skill overhead ──────────────
-    if (/^!!opt\b/i.test(prompt)) {
-      let remaining = prompt.replace(/^!!opt\s*/i, '').trim();
+    // ── /sherpa:prompt-optimizer or !!opt — run optimizer directly, no skill overhead ──
+    const SKILL_RE = /^\/sherpa:(?:sherpa-)?prompt-optimizer\b/i;
+    if (SKILL_RE.test(prompt) || /^!!opt\b/i.test(prompt)) {
+      let remaining = prompt.replace(SKILL_RE, '').replace(/^!!opt\s*/i, '').trim();
       let triggerBackend = null;
       const backendMatch = remaining.match(/^--backend\s+(\S+)\s*/i);
       if (backendMatch) { triggerBackend = backendMatch[1]; remaining = remaining.slice(backendMatch[0].length).trim(); }
