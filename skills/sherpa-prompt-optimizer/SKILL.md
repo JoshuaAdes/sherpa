@@ -7,4 +7,4 @@ description: >
   SKIP: user gives a direct implementation command (not asking to optimize a prompt).
 ---
 
-Run hook cmd (blocking). JSON→submit=exec text,else stop.
+Hook handles invocation — no action needed.
