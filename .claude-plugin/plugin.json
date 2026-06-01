@@ -11,7 +11,7 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/sherpa-optimizer.js\"",
-            "timeout": 300
+            "timeout": 1800
           }
         ]
       }
